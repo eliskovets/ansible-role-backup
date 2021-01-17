@@ -25,12 +25,15 @@ MYSQL_CREDENTIALS="--defaults-extra-file={{ backup_mysql_credential_file }}"
 MYSQL_CREDENTIALS="-u {{ backup_mysql_user }} -p{{ backup_mysql_password }}"
 {% endif %}
 
+# Cleanup old backups
+rm {{ backup_path }}/databases/*.sql.gz
+
 # Dump all MySQL databases.
 DATABASES=`$MYSQL $MYSQL_CREDENTIALS -e "SHOW DATABASES;" | grep -Ev '(Database|information_schema|performance_schema|mysql|sys)'`
 for DB in $DATABASES
 do
   # Dump the database with mysqldump (piped through gzip to conserve IO).
-  $MYSQLDUMP $MYSQL_CREDENTIALS --single-transaction --quick --lock-tables=false $DB | gzip -f -6 > {{ backup_path }}/databases/$DB.sql.gz
+  $MYSQLDUMP $MYSQL_CREDENTIALS --single-transaction --quick --lock-tables=false $DB | gzip -f -6 > {{ backup_path }}/databases/$DB-$(date +%F).sql.gz
 done
 
 # Sync the databases directory.
